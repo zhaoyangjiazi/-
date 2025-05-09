@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>儿童绘本故事生成器</title>
+    <!-- 引入Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            padding-bottom: 50px;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #6a1b9a;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .btn-primary {
+            background-color: #6a1b9a;
+            border-color: #6a1b9a;
+        }
+        .btn-primary:hover {
+            background-color: #5e1990;
+            border-color: #5e1990;
+        }
+        .btn-audio {
+            background-color: #8e24aa;
+            color: white;
+            border-radius: 50px;
+            padding: 5px 15px;
+            border: none;
+        }
+        .btn-audio:hover {
+            background-color: #7b1fa2;
+            color: white;
+        }
+        .audio-player {
+            background-color: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .audio-status {
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .btn-success {
+            background-color: #43a047;
+            border-color: #43a047;
+        }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .image-card {
+            width: 280px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .image-thumbnail {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+        .image-caption {
+            background-color: #f3e5f5;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 故事内容CSS样式 */
+        .story-content {
+            margin: 20px 0;
+        }
+        .story-content h1 {
+            margin-bottom: 15px;
+        }
+        .story-content .image-container {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            text-align: center;
+        }
+        .story-content .story-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin: 10px auto;
+        }
+        .story-content .story-paragraph {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+        .story-content hr {
+            margin: 20px 0;
+            border-top: 1px dashed #ccc;
+        }
+        .story-content .description {
+            background-color: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .story-content .character,
+        .story-content .vocabulary {
+            margin: 8px 0;
+        }
+        
+        /* 翻书效果相关样式 */
+        #flipbook {
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+        }
+        #flipbook .page {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            padding: 20px;
+            color: #333;
+            text-align: center;
+            position: relative;
+        }
+        #flipbook .hard {
+            background-color: #6a1b9a !important;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        #flipbook .page-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #flipbook .page-image {
+            max-width: 80%;
+            max-height: 60%;
+            margin: 0 auto 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #flipbook .page-text {
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 0 10px;
+            overflow-y: auto;
+            max-height: 35%;
+        }
+        .book-controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .book-controls button {
+            background-color: #6a1b9a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .book-controls button:hover {
+            background-color: #5e1990;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI儿童图画书生成工具</h1>
+            <p class="text-muted">输入主题，一键生成精美插图儿童故事</p>
+        </div>
+        
+        <!-- 故事生成表单 -->
+        <form id="storyForm" class="mb-4">
+            <div class="mb-3">
+                <label for="theme" class="form-label">故事主题</label>
+                <input type="text" class="form-control" id="theme" name="theme" placeholder="例如：小兔子山洞冒险、森林里的友谊、勇敢的小水滴..." required>
+                <div class="form-text">输入一个简短的故事主题，系统将为您生成完整的儿童故事和配图</div>
+            </div>
+            
+            <div class="language-selector mb-3">
+                <label class="form-label">故事语言</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="language" id="langChinese" value="zh" checked>
+                        <label class="form-check-label" for="langChinese">
+                            中文
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="language" id="langEnglish" value="en">
+                        <label class="form-check-label" for="langEnglish">
+                            英文
+                        </label>
+                    </div>
+                </div>
+                <div class="form-text">选择生成故事的语言</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="forbiddenWords" class="form-label">禁用词（可选）</label>
+                <input type="text" class="form-control" id="forbiddenWords" name="forbiddenWords" placeholder="输入不想在故事和图片中出现的元素，多个词用逗号分隔">
+                <div class="form-text">这些元素将被排除在生成的内容中，适用于避免特定内容</div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">开始创作</button>
+        </form>
+
+        <!-- 加载状态提示 -->
+        <div id="loading" class="loading" style="display: none;">
+            <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/icons/arrow-repeat.svg" class="loading-spinner">
+            <p>正在创作精彩故事，这可能需要几分钟时间...</p>
+            <p class="text-muted">系统正在生成故事内容和精美插图，请耐心等待</p>
+        </div>
+
+        <!-- 生成结果展示区域 -->
+        <div id="result" style="display: none;">
+            <h2 id="storyTitle" class="mb-3 text-center"></h2>
+            
+            <!-- 语音播放控制 -->
+            <div class="audio-player mb-4">
+                <h4><i class="bi bi-volume-up"></i> 故事朗读</h4>
+                <div class="audio-controls">
+                    <button id="generateAudio" class="btn btn-audio">
+                        <i class="bi bi-music-note-beamed"></i> 生成语音
+                    </button>
+                    <button id="playAudio" class="btn btn-audio" style="display: none;">
+                        <i class="bi bi-play-fill"></i> 播放
+                    </button>
+                    <button id="pauseAudio" class="btn btn-audio" style="display: none;">
+                        <i class="bi bi-pause-fill"></i> 暂停
+                    </button>
+                </div>
+                <div id="audioPlayer" class="mt-2" style="display: none;"></div>
+                <div id="audioStatus" class="audio-status"></div>
+            </div>
+            
+            <!-- 翻书控制按钮 -->
+            <div class="book-controls">
+                <button id="prevPage"><i class="bi bi-chevron-left"></i> 上一页</button>
+                <button id="nextPage">下一页 <i class="bi bi-chevron-right"></i></button>
+            </div>
+            
+            <!-- 故事翻书容器 -->
+            <div id="flipbook"></div>
+            
+            <!-- 原始故事内容（隐藏，仅用于处理） -->
+            <div id="storyText" class="story-content" style="display: none;"></div>
+
+            <div class="text-center mt-4">
+                <a id="downloadMarkdown" class="btn btn-success" href="#" download>
+                    <i class="bi bi-download"></i> 下载完整故事
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Bootstrap JS及jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入Turn.js库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 全局变量存储故事纯文本和音频元素
+            var storyPlainText = '';
+            var storyLanguage = 'zh';
+            var audioElement = null;
+            
+            // 处理故事生成表单提交事件
+            $('#storyForm').submit(function (e) {
+                e.preventDefault();
+                
+                // 获取用户输入的主题
+                var theme = $('#theme').val().trim();
+                if (!theme) {
+                    alert('请输入故事主题');
+                    return;
+                }
+                
+                // 获取用户选择的语言
+                storyLanguage = $('input[name="language"]:checked').val();
+                
+                // 获取用户输入的禁用词
+                var forbiddenWords = $('#forbiddenWords').val().trim();
+                
+                // 显示加载提示，隐藏结果区域
+                $('#loading').show();
+                $('#result').hide();
+                
+                // 重置音频相关元素
+                $('#generateAudio').show();
+                $('#playAudio, #pauseAudio').hide();
+                $('#audioPlayer').empty().hide();
+                $('#audioStatus').text('');
+                
+                // 重置翻书元素
+                $('#flipbook').html('');
+                
+                // 准备发送到后端的数据
+                var payload = {
+                    theme: theme,
+                    language: storyLanguage,
+                    forbidden_words: forbiddenWords
+                };
+
+                // 通过AJAX调用后端生成故事接口
+                $.ajax({
+                    url: '/generate_story',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: function (response) {
+                        // 调试检查响应数据
+                        console.log("服务器返回的完整响应:", response);
+                        
+                        // 处理成功响应
+                        // 提取标题 (假设标题是h1标签包裹的内容)
+                        var titleMatch = response.text.match(/<h1>(.*?)<\/h1>/);
+                        var title = titleMatch ? titleMatch[1] : '生成的故事';
+                        $('#storyTitle').text(title);
+                        
+                        // 检查服务器是否返回图片列表
+                        if (response.images && response.images.length > 0) {
+                            console.log("服务器返回的图片列表:", response.images);
+                        }
+                        
+                        // 在隐藏元素中存储原始故事内容
+                        $('#storyText').html(response.text);
+                        
+                        // 保存故事纯文本，用于语音生成
+                        storyPlainText = response.plain_text || response.raw_markdown;
+                        
+                        // 输出原始Markdown以便调试
+                        console.log("原始Markdown:", response.raw_markdown);
+
+                        // 处理故事内容为翻书格式
+                        processStoryContent(response.images || []);
+
+                        // 设置Markdown文件下载链接
+                        if (response.markdown_url) {
+                            $('#downloadMarkdown').attr('href', response.markdown_url);
+                        }
+
+                        // 显示结果区并隐藏加载提示
+                        $('#result').show();
+                        $('#loading').hide();
+                        
+                        // 滚动到结果区域
+                        $('html, body').animate({
+                            scrollTop: $("#result").offset().top - 50
+                        }, 500);
+                    },
+                    error: function (err) {
+                        console.error("AJAX错误:", err);
+                        let errorMsg = '生成故事时发生错误，请稍后重试。';
+                        if (err.responseJSON && err.responseJSON.error) {
+                            errorMsg = err.responseJSON.error;
+                        }
+                        alert(errorMsg);
+                        $('#loading').hide();
+                    },
+                    timeout: 300000 // 5分钟超时
+                });
+            });
+            
+            // 处理故事内容为翻书格式
+            function processStoryContent(serverImages) {
+                try {
+                    console.log("开始处理故事内容");
+                    
+                    // 获取故事文本内容
+                    var storyContent = $('#storyText');
+                    
+                    // 创建翻书页面
+                    var flipbook = $('#flipbook');
+                    
+                    // 清空flipbook
+                    flipbook.empty();
+                    
+                    // 获取原始Markdown
+                    var rawMarkdown = '';
+                    if (storyPlainText) {
+                        rawMarkdown = storyPlainText;
+                        console.log("获取到原始Markdown:", rawMarkdown);
+                    }
+                    
+                    // 获取标题和角色描述
+                    var title = $('#storyTitle').text();
+                    console.log("故事标题:", title);
+                    
+                    // 获取角色描述内容
+                    var characterDescription = '';
+                    storyContent.find('.description').each(function() {
+                        characterDescription += $(this).html();
+                    });
+                    
+                    // 创建封面页(硬皮)
+                    flipbook.append('<div class="hard" style="background-color: #6a1b9a; color: white; font-weight: bold; text-align: center;"><div style="padding-top: 250px; font-size: 24px;">' + title + '</div></div>');
+                    
+                    // 创建标题页面，包含角色介绍
+                    var titlePage = '<div style="background-color: #f3e5f5; padding: 30px; text-align: center;">';
+                    titlePage += '<div style="height: 100%; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto;">';
+                    titlePage += '<h1 style="font-size: 32px; margin-bottom: 20px; color: #6a1b9a;">' + title + '</h1>';
+                    titlePage += '<p style="font-size: 18px; font-style: italic; margin-bottom: 30px;">一个由AI创作的儿童绘本故事</p>';
+                    
+                    // 如果有角色描述，添加到标题页
+                    if (characterDescription && characterDescription.trim() !== '') {
+                        console.log("添加角色介绍到标题页");
+                        titlePage += '<div style="text-align: left; padding: 0 10px; margin-top: 20px;">';
+                        titlePage += '<h2 style="font-size: 22px; margin-bottom: 15px; color: #6a1b9a; text-align: center;">故事角色</h2>';
+                        titlePage += characterDescription;
+                        titlePage += '</div>';
+                    }
+                    
+                    titlePage += '</div></div>';
+                    flipbook.append(titlePage);
+                    
+                    // 解析Markdown并创建内容页
+                    if (rawMarkdown) {
+                        console.log("处理Markdown内容创建翻书页面");
+                        console.log("Markdown内容前200字符:", rawMarkdown.substring(0, 200));
+                        
+                        // 跳过标题、角色描述等内容，直接提取正文段落
+                        // 正文段落通常是由空行分隔的文本块
+                        
+                        // 首先移除可能的标题和角色描述部分
+                        var contentStart = 0;
+                        var lines = rawMarkdown.split('\n');
+                        
+                        // 尝试找到正文开始的位置（跳过标题和角色描述）
+                        for (var i = 0; i < Math.min(20, lines.length); i++) {
+                            var line = lines[i].trim();
+                            if (line.startsWith('#') || line.includes('角色') || line.includes('Squeaky') || line.includes('Bella')) {
+                                contentStart = i + 1;
+                            }
+                            
+                            // 如果遇到连续两个空行，可能是角色描述结束的标志
+                            if (i > 0 && line === '' && lines[i-1].trim() === '') {
+                                contentStart = i + 1;
+                                console.log("找到可能的正文开始位置:", contentStart);
+                                break;
+                            }
+                        }
+                        
+                        console.log("跳过前" + contentStart + "行");
+                        
+                        // 提取正文（跳过词汇小课堂部分）
+                        var storyContent = "";
+                        var inVocabSection = false;
+                        var vocabContent = "";
+                        
+                        for (var i = contentStart; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            
+                            // 检查是否进入词汇小课堂部分
+                            if (line.includes("词汇") || line.includes("小课堂")) {
+                                inVocabSection = true;
+                                vocabContent += line + "\n";
+                                continue;
+                            }
+                            
+                            if (inVocabSection) {
+                                vocabContent += line + "\n";
+                            } else {
+                                storyContent += line + "\n";
+                            }
+                        }
+                        
+                        console.log("提取的正文长度:", storyContent.length);
+                        
+                        // 按空行分割段落
+                        var paragraphs = storyContent.split(/\n\s*\n/).filter(function(para) {
+                            return para.trim() !== '';
+                        });
+                        
+                        console.log("提取的段落数:", paragraphs.length);
+                        console.log("服务器返回图片数:", serverImages ? serverImages.length : 0);
+                        
+                        if (paragraphs.length === 0) {
+                            console.log("未能提取到段落，尝试直接拆分整个文本");
+                            // 尝试将整个文本视为一个长段落，然后按句号或感叹号拆分
+                            var text = storyContent.trim();
+                            if (text) {
+                                paragraphs = text.split(/[。！？.!?]/).filter(function(sentence) {
+                                    return sentence.trim() !== '';
+                                }).map(function(sentence) {
+                                    return sentence.trim() + "。"; // 添加句号
+                                });
+                                console.log("按句子拆分后的段落数:", paragraphs.length);
+                            }
+                        }
+                        
+                        // 如果段落数大于图片数，考虑合并一些段落
+                        if (paragraphs.length > 0 && serverImages && paragraphs.length > serverImages.length) {
+                            console.log("段落数多于图片数，尝试合并段落");
+                            var ratio = Math.ceil(paragraphs.length / serverImages.length);
+                            var mergedParagraphs = [];
+                            
+                            for (var i = 0; i < paragraphs.length; i += ratio) {
+                                var combinedPara = "";
+                                for (var j = 0; j < ratio && i + j < paragraphs.length; j++) {
+                                    combinedPara += paragraphs[i + j] + "\n\n";
+                                }
+                                mergedParagraphs.push(combinedPara.trim());
+                            }
+                            
+                            paragraphs = mergedParagraphs;
+                            console.log("合并后的段落数:", paragraphs.length);
+                        }
+                        
+                        // 如果仍然没有段落或段落数为0，显示错误
+                        if (paragraphs.length === 0) {
+                            console.log("未能提取到有效段落，无法创建绘本");
+                            // 在页面上显示错误
+                            flipbook.append('<div style="background-color: #f8d7da; padding: 30px; text-align: center;">' +
+                                           '<h2>无法加载故事内容</h2>' +
+                                           '<p>未能从Markdown中提取有效段落。</p>' +
+                                           '<p>原始内容前100个字符: ' + rawMarkdown.substring(0, 100).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '...</p>' +
+                                           '</div>');
+                            return;
+                        }
+                        
+                        // 创建段落对象数组，将段落与图片关联
+                        var segments = [];
+                        
+                        // 根据图片文件名中的场景序号排序
+                        if (serverImages && serverImages.length > 0) {
+                            console.log("原始图片顺序:", serverImages);
+                            
+                            // 对图片进行排序，按照scene_数字的顺序
+                            var sortedImages = serverImages.slice(); // 复制数组，避免修改原数组
+                            sortedImages.sort(function(a, b) {
+                                // 提取scene_后面的数字
+                                var numA = parseInt((a.match(/scene_(\d+)/i) || [0, 0])[1]);
+                                var numB = parseInt((b.match(/scene_(\d+)/i) || [0, 0])[1]);
+                                
+                                // 如果提取不到数字，使用原始顺序
+                                if (isNaN(numA)) numA = 9999;
+                                if (isNaN(numB)) numB = 9999;
+                                
+                                return numA - numB;
+                            });
+                            
+                            console.log("按场景序号排序后的图片:", sortedImages);
+                            
+                            // 确保有足够的段落与图片匹配
+                            while (paragraphs.length < sortedImages.length) {
+                                // 如果段落不够，添加空段落
+                                paragraphs.push(""); 
+                            }
+                            
+                            // 为每张图片创建一个段落
+                            for (var i = 0; i < sortedImages.length; i++) {
+                                var text = i < paragraphs.length ? paragraphs[i] : "";
+                                segments.push({
+                                    text: text,
+                                    imagePath: sortedImages[i]
+                                });
+                                
+                                // 输出当前处理的图片场景编号
+                                var sceneMatch = sortedImages[i].match(/scene_(\d+)/i);
+                                var sceneNum = sceneMatch ? sceneMatch[1] : "未知";
+                                console.log("添加场景:", sceneNum, "对应图片:", sortedImages[i].split('/').pop());
+                            }
+                        } 
+                        // 如果没有图片，只显示文本
+                        else if (paragraphs.length > 0) {
+                            console.log("没有图片，只显示段落文本，段落数量:", paragraphs.length);
+                            // 只有段落没有图片
+                            for (var i = 0; i < paragraphs.length; i++) {
+                                segments.push({
+                                    text: paragraphs[i],
+                                    imagePath: ""
+                                });
+                            }
+                        }
+                        
+                        console.log("最终创建的页面数:", segments.length);
+                        
+                        // 生成翻书页面
+                        for (var i = 0; i < segments.length; i++) {
+                            var bgColor = i % 2 === 0 ? '#f8f9fa' : '#e9ecef';
+                            var segment = segments[i];
+                            
+                            // 创建页面
+                            var page = '<div style="background-color: ' + bgColor + '; padding: 20px; overflow: hidden;">';
+                            page += '<div style="height: 100%; display: flex; flex-direction: column; justify-content: flex-start;">';
+                            
+                            // 添加图片部分
+                            if (segment.imagePath) {
+                                page += '<div style="flex: 2; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">';
+                                page += '<img src="' + segment.imagePath + '" alt="故事插图" ';
+                                page += 'style="max-width: 95%; max-height: 350px; object-fit: contain;" ';
+                                page += 'onerror="this.onerror=null; var filename=this.src.split(\'/\').pop(); ';
+                                page += 'this.src=\'/generated_images/\' + filename;">';
+                                page += '</div>';
+                            }
+                            
+                            // 添加段落文本
+                            page += '<div style="flex: 1; font-size: 16px; line-height: 1.6; overflow-y: auto; padding: 10px;">';
+                            page += formatText(segment.text);
+                            page += '</div>';
+                            
+                            page += '</div></div>';
+                            
+                            // 添加到书本
+                            flipbook.append(page);
+                        }
+                        
+                        // 处理词汇小课堂部分（如果有）
+                        if (vocabContent.trim()) {
+                            console.log("处理词汇小课堂内容");
+                            
+                            // 转换为HTML
+                            var vocabHTML = vocabContent.replace(/\*\*.*?\*\*/g, function(match) {
+                                return '<strong>' + match.replace(/\*/g, '') + '</strong>';
+                            });
+                            
+                            // 创建词汇页
+                            var vocabPage = '<div style="background-color: #f0f4ff; padding: 30px; overflow-y: auto;">';
+                            vocabPage += '<h2 style="font-size: 24px; margin-bottom: 20px; color: #4a148c; text-align: center;">词汇小课堂</h2>';
+                            vocabPage += '<div style="text-align: left;">';
+                            vocabPage += vocabHTML;
+                            vocabPage += '</div></div>';
+                            
+                            // 添加到书本
+                            flipbook.append(vocabPage);
+                        }
+                    } 
+                    // 如果没有Markdown，直接使用图片和HTML段落
+                    else if (serverImages && serverImages.length > 0) {
+                        console.log("使用服务器图片和HTML内容创建翻书:");
+                        
+                        // 提取段落，排除标题和角色描述
+                        var paragraphs = [];
+                        var paraTitles = [];
+                        
+                        // 首先找出所有段落及其内容
+                        storyContent.find('p').each(function() {
+                            var paraText = $(this).html();
+                            paraTitles.push(paraText.substring(0, Math.min(30, paraText.length))); // 保存前30个字符用于调试
+                            paragraphs.push(paraText);
+                        });
+                        
+                        console.log("HTML内容中找到所有段落:", paraTitles.join(' | '));
+                        
+                        // 识别标题和角色部分的结束位置
+                        var storyStartIndex = 0;
+                        
+                        // 寻找第一个不包含标题和不是角色描述的段落
+                        for (var i = 0; i < paragraphs.length; i++) {
+                            var para = paragraphs[i];
+                            
+                            // 如果段落包含标题，跳过
+                            if (para.includes(title)) {
+                                console.log("跳过标题段落:", paraTitles[i]);
+                                storyStartIndex = i + 1;
+                                continue;
+                            }
+                            
+                            // 如果段落是角色描述（通常包含"角色"、"："或在描述div内），跳过
+                            if (para.includes('角色') || para.includes('：') || 
+                                storyContent.find('.description p:contains("' + para.substring(0, 20) + '")').length > 0) {
+                                console.log("跳过角色描述段落:", paraTitles[i]);
+                                storyStartIndex = i + 1;
+                                continue;
+                            }
+                            
+                            // 找到第一个实际故事段落
+                            break;
+                        }
+                        
+                        // 提取实际故事段落
+                        var storyParagraphs = paragraphs.slice(storyStartIndex);
+                        console.log("跳过" + storyStartIndex + "段后的故事段落数:", storyParagraphs.length);
+                        console.log("图片数:", serverImages.length);
+                        
+                        // 为每个段落生成一页内容，确保段落和图片一一对应
+                        for (var i = 0; i < storyParagraphs.length; i++) {
+                            var bgColor = i % 2 === 0 ? '#f8f9fa' : '#e9ecef';
+                            var paragraph = storyParagraphs[i];
+                            
+                            // 创建页面（图片+段落）
+                            var page = '<div style="background-color: ' + bgColor + '; padding: 20px; overflow: hidden;">';
+                            page += '<div style="height: 100%; display: flex; flex-direction: column; justify-content: flex-start;">';
+                            
+                            // 添加图片部分（如果有对应图片）
+                            if (i < serverImages.length) {
+                                page += '<div style="flex: 2; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">';
+                                page += '<img src="' + serverImages[i] + '" alt="故事插图" style="max-width: 95%; max-height: 350px; object-fit: contain;">';
+                                page += '</div>';
+                            }
+                            
+                            // 添加段落文本
+                            page += '<div style="flex: 1; font-size: 16px; line-height: 1.6; overflow-y: auto; padding: 10px;">';
+                            page += paragraph;
+                            page += '</div>';
+                            
+                            page += '</div></div>';
+                            
+                            // 添加到书本
+                            flipbook.append(page);
+                        }
+                    } else {
+                        console.log("无法找到足够的内容创建翻书");
+                        
+                        // 添加提示页
+                        flipbook.append('<div style="background-color: #f8f9fa; padding: 20px;"><div style="text-align: center; padding-top: 200px;">故事内容生成中...</div></div>');
+                        flipbook.append('<div style="background-color: #e9ecef; padding: 20px;"><div style="text-align: center; padding-top: 200px;">请稍后刷新页面</div></div>');
+                    }
+                    
+                    // 添加故事结束页
+                    var endingPage = '<div style="background-color: #f3e5f5; padding: 30px; text-align: center;">';
+                    endingPage += '<div style="height: 100%; display: flex; flex-direction: column; justify-content: center;">';
+                    endingPage += '<h2 style="font-size: 28px; margin-bottom: 30px; color: #6a1b9a;">故事结束</h2>';
+                    endingPage += '<p style="font-size: 18px;">感谢您阅读这个AI创作的儿童绘本故事</p>';
+                    endingPage += '</div></div>';
+                    flipbook.append(endingPage);
+                    
+                    // 添加封底(硬皮)
+                    flipbook.append('<div class="hard" style="background-color: #6a1b9a; text-align: center;"><div style="padding-top: 250px; color: white; font-size: 18px;">THE END</div></div>');
+                    
+                    // 销毁之前的实例（如果存在）
+                    if (flipbook.data().turn) {
+                        flipbook.turn('destroy');
+                    }
+                    
+                    // 初始化turn.js，确保配置正确
+                    flipbook.turn({
+                        width: 800,
+                        height: 600,
+                        autoCenter: true,
+                        display: 'single',
+                        acceleration: true,
+                        elevation: 50,
+                        gradients: true
+                    });
+                    
+                    console.log("翻书初始化完成");
+                    
+                    // 绑定按钮事件
+                    $('#prevPage').off('click').on('click', function() {
+                        flipbook.turn('previous');
+                    });
+                    
+                    $('#nextPage').off('click').on('click', function() {
+                        flipbook.turn('next');
+                    });
+                    
+                    // 处理窗口大小调整
+                    $(window).off('resize').on('resize', function() {
+                        resizeBook();
+                    });
+                    
+                    // 调用一次调整大小
+                    setTimeout(function() {
+                        resizeBook();
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error("处理故事内容时发生错误:", error);
+                    
+                    // 错误处理：显示简单版本
+                    var flipbook = $('#flipbook');
+                    flipbook.empty();
+                    
+                    // 创建基本页面结构
+                    flipbook.append('<div style="background: #6a1b9a; color: white;" class="hard"><div style="text-align: center; padding-top: 250px; font-size: 24px;">' + $('#storyTitle').text() + '</div></div>');
+                    
+                    // 创建错误提示页
+                    var errorPage = '<div style="background: #f8f9fa; padding: 30px; text-align: center;">';
+                    errorPage += '<div style="height: 100%; display: flex; flex-direction: column; justify-content: center;">';
+                    errorPage += '<h2 style="font-size: 28px; margin-bottom: 30px; color: #dc3545;">内容加载失败</h2>';
+                    errorPage += '<p style="font-size: 18px;">很抱歉，加载故事内容时发生错误。</p>';
+                    errorPage += '<p style="font-size: 18px; margin-top: 20px;">请刷新页面或稍后再试。</p>';
+                    errorPage += '<p style="font-size: 14px; margin-top: 30px; color: #6c757d;">错误详情: ' + error.message + '</p>';
+                    errorPage += '</div></div>';
+                    flipbook.append(errorPage);
+                    
+                    // 添加封底
+                    flipbook.append('<div style="background: #6a1b9a;" class="hard"><div style="text-align: center; padding-top: 250px; color: white; font-size: 18px;">THE END</div></div>');
+                    
+                    // 销毁之前的实例（如果存在）
+                    if (flipbook.data().turn) {
+                        flipbook.turn('destroy');
+                    }
+                    
+                    // 简单初始化
+                    flipbook.turn({
+                        width: 800,
+                        height: 600,
+                        display: 'single'
+                    });
+                    
+                    // 重新绑定按钮
+                    $('#prevPage').off('click').on('click', function() {
+                        flipbook.turn('previous');
+                    });
+                    
+                    $('#nextPage').off('click').on('click', function() {
+                        flipbook.turn('next');
+                    });
+                }
+            }
+            
+            // 调整书本大小的函数
+            function resizeBook() {
+                var flipbook = $('#flipbook');
+                if (flipbook.data().turn) {
+                    // 获取容器宽度
+                    var containerWidth = $('.container').width() - 60;
+                    // 保持4:3比例
+                    var newHeight = Math.floor(containerWidth * 0.75);
+                    // 设置新尺寸
+                    flipbook.turn('size', containerWidth, newHeight);
+                    // 确保自动居中
+                    flipbook.turn('center');
+                }
+            }
+            
+            // 格式化文本的函数，将Markdown转为HTML
+            function formatText(text) {
+                if (!text) return '';
+                
+                // 处理基本Markdown语法
+                var formattedText = text
+                    // 移除可能残留的图片标记
+                    .replace(/!\[(.*?)\]\((.*?)\)/g, '')
+                    // 处理加粗
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // 处理斜体
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    // 处理换行
+                    .replace(/\n\n/g, '<br><br>')
+                    .replace(/\n/g, '<br>');
+                
+                return formattedText;
+            }
+            
+            // 处理生成语音按钮点击事件
+            $('#generateAudio').click(function () {
+                if (!storyPlainText) {
+                    $('#audioStatus').text('没有可用于语音生成的故事内容').css('color', '#dc3545');
+                    return;
+                }
+                
+                // 更新状态并禁用按钮
+                $('#generateAudio').prop('disabled', true).html('<i class="bi bi-arrow-repeat"></i> 正在生成语音...');
+                $('#audioStatus').text('正在生成语音文件，请稍候...').css('color', '#6c757d');
+                
+                // 准备请求数据
+                var payload = {
+                    text: storyPlainText,
+                    language: storyLanguage
+                };
+                
+                // 调用后端生成语音API
+                $.ajax({
+                    url: '/generate_audio',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: function (response) {
+                        // 创建音频元素
+                        $('#audioPlayer').html('<audio id="storyAudio" controls src="' + response.audio_url + '"></audio>').show();
+                        audioElement = document.getElementById('storyAudio');
+                        
+                        // 更新UI
+                        $('#generateAudio').hide();
+                        $('#playAudio, #pauseAudio').show();
+                        $('#playAudio').show();
+                        $('#pauseAudio').hide();
+                        $('#audioStatus').text('语音生成成功，可以开始播放').css('color', '#28a745');
+                    },
+                    error: function (err) {
+                        let errorMsg = '语音生成失败，请稍后重试。';
+                        if (err.responseJSON && err.responseJSON.error) {
+                            errorMsg = err.responseJSON.error;
+                        }
+                        $('#audioStatus').text(errorMsg).css('color', '#dc3545');
+                        $('#generateAudio').prop('disabled', false).html('<i class="bi bi-music-note-beamed"></i> 重试生成语音');
+                    }
+                });
+            });
+            
+            // 播放音频按钮事件
+            $('#playAudio').click(function () {
+                if (audioElement) {
+                    audioElement.play();
+                    $('#playAudio').hide();
+                    $('#pauseAudio').show();
+                    $('#audioStatus').text('正在播放...').css('color', '#6c757d');
+                }
+            });
+            
+            // 暂停音频按钮事件
+            $('#pauseAudio').click(function () {
+                if (audioElement) {
+                    audioElement.pause();
+                    $('#pauseAudio').hide();
+                    $('#playAudio').show();
+                    $('#audioStatus').text('已暂停').css('color', '#6c757d');
+                }
+            });
+            
+            // 音频播放完成事件
+            $(document).on('ended', '#storyAudio', function() {
+                $('#pauseAudio').hide();
+                $('#playAudio').show();
+                $('#audioStatus').text('播放完成').css('color', '#28a745');
+            });
+        });
+    </script>
+</body>
+</html>
